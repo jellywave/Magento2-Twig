@@ -30,6 +30,11 @@ class Twig extends Php
     protected $_directoryList;
 
     /**
+     * @var SerializerInterface
+     */
+    private $serializer;
+
+    /**
      * Event manager
      *
      * @var \Magento\Framework\Event\ManagerInterface
@@ -41,13 +46,15 @@ class Twig extends Php
      * @param DirectoryList          $directoryList
      * @param ScopeConfigInterface   $scopeConfig
      * @param ManagerInterface       $eventManager
+     * @param SerializerInterface       $serializer
      * @throws \Magento\Framework\Exception\FileSystemException
      */
     public function __construct(
         ObjectManagerInterface $helperFactory,
         DirectoryList $directoryList,
         ScopeConfigInterface $scopeConfig,
-        ManagerInterface $eventManager
+        ManagerInterface $eventManager,
+        SerializerInterface $serializer
     ) {
         parent::__construct($helperFactory);
 
@@ -55,6 +62,7 @@ class Twig extends Php
         $this->_scopeConfig = $scopeConfig;
         $this->eventManager = $eventManager;
 
+        $this->serializer = $serializer;
         $this->initTwig();
     }
 
@@ -100,6 +108,7 @@ class Twig extends Php
 
         if (false === ($loader instanceof \Twig_LoaderInterface)) {
             $loader = new \Twig_Loader_Filesystem($this->_directoryList->getPath(DirectoryList::ROOT));
+            $this->eventManager->dispatch('twig_init_loader', ['loader' => $loader]);
         }
 
         return $loader;
@@ -146,8 +155,22 @@ class Twig extends Php
     public function render(BlockInterface $block, $fileName, array $dictionary = [])
     {
         $this->_currentBlock = $block;
+        $viewModel = $block->getData('view_model');
+        $debug = '';
+        if($viewModel && $viewModel instanceof \SchumacherFM\Twig\ViewModel\TwigDataInterface) {
+            $viewModel->setBlock($block);
+            $viewModel->setDictionary($dictionary);
+            $dictionary = $viewModel->getData();
 
-        return $this->getTemplate($fileName)->render($dictionary);
+            if($viewModel && $viewModel instanceof \SchumacherFM\Twig\ViewModel\TwigDataInterface) {
+                $json = $dictionary;
+                $json = $this->serializer->serialize($json);
+                $json = base64_encode($json);
+                $debug = '<div class="debugging-hint-viewmodel-values" style="position: absolute; bottom: 0; padding: 2px 5px; font: normal 11px Arial; background:#71b236; left: 0; color:#bacf29; white-space: nowrap; cursor: help" onmouseover="this.style.zIndex = 999;" onmouseout="this.style.zIndex = \'auto\';" onclick="console.log(JSON.parse(window.atob(\'' . $json . '\')));" title="Magento\Theme\Block\Html\Header\Logo">TWIG ViewModel</div>';
+            }
+        }
+
+        return $this->getTemplate($fileName)->render($dictionary) . $debug;
     }
 
     /**

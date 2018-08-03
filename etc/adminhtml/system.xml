@@ -15,6 +15,14 @@
                     </comment>
                 </field>
 
+                <field id="template_hints_values" translate="label" type="select" sortOrder="52" showInDefault="1"
+                       showInWebsite="0" showInStore="0">
+                    <label>Add Twig ViewModel Values Hints</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment>This adds a block for ViewModel Values, click and watch the DevTools
+                    </comment>
+                </field>
+
                 <field id="auto_reload" translate="label" type="select" sortOrder="55" showInDefault="1"
                        showInWebsite="0" showInStore="0">
                     <label>Auto Reload</label>
